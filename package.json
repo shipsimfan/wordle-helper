@@ -1,0 +1,22 @@
+{
+  "name": "wordle-helper",
+  "version": "1.0.0",
+  "description": "A utility to help solve wordle puzzles",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shipsimfan/wordle-helper.git"
+  },
+  "author": "Lance Hart (shipsimfan)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shipsimfan/wordle-helper/issues"
+  },
+  "homepage": "https://github.com/shipsimfan/wordle-helper#readme",
+  "dependencies": {
+    "prompt-sync": "^4.2.0"
+  }
+}

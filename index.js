@@ -35,23 +35,19 @@ function filter(words) {
     // Create new words list
     let new_words = [];
     for (word of words) {
+        let invert = false;
+        if (filter_type == "con" || filter_type == "notcon") {
+            if (filter_type == "notcon")
+                invert = true;
+            filter_type = "multicon";
+            third_param = 1;
+        } else if (filter_type == "notat") {
+            invert = true;
+            filter_type = "at";
+        }
+
         let keep = true;
-        if (filter_type == "con") {
-            keep = false;
-            for (wletter of word) {
-                if (wletter == letter) {
-                    keep = true;
-                    break;
-                }
-            }
-        } else if (filter_type == "notcon") {
-            for (wletter of word) {
-                if (wletter == letter) {
-                    keep = false;
-                    break;
-                }
-            }
-        } else if (filter_type == "multicon") {
+        if (filter_type == "multicon") {
             let count = 0;
             for (wletter of word)
                 if (wletter == letter)
@@ -60,9 +56,9 @@ function filter(words) {
             keep = count >= third_param;
         } else if (filter_type == "at")
             keep = word[third_param] == letter;
-        else if (filter_type == "notat")
-            keep = word[third_param] != letter;
 
+        if (invert)
+            keep != keep;
 
         if (keep)
             new_words.push(word);

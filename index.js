@@ -1,127 +1,127 @@
-const fs = require('fs');
 const prompt = require('prompt-sync')({ sigint: true });
+const fs = require('fs');
+const new_game = require('./game');
+const new_ai = require('./ai');
 
 const WORDS_FILE = './words.txt';
-const INITIAL_GUESS = "spain";
 
-fs.readFile(WORDS_FILE, 'utf8', (err, data) => {
-    if (err)
-        throw err;
+console.log(" 1. Play a game");
+console.log(" 2. Run AI");
+console.log(" 3. Test AI");
+let mode = parseInt(prompt("Please select an option: "));
 
-    let words = data.split('\n');
+if (mode == 1) {
+    let word = prompt("Enter the word (leave blank for random): ");
 
-    console.log(`${WORDS_FILE} contains ${words.length} words`);
+    if (word == "") {
+        fs.readFile(WORDS_FILE, 'utf8', (err, data) => {
+            if (err)
+                throw err;
 
-    let guess = INITIAL_GUESS; // Initial guess
+            let words = data.split('\n');
 
-    while (words.length > 1) {
-        console.log(`I guess ${guess}`);
-        // Get result
-        let result = prompt("Enter the result: ").toLowerCase();
+            let word = words[Math.floor(Math.random() * words.length)];
 
-        words = filter_from_result(words, guess, result);
-        guess = select_next_guess(words);
+            play(word);
+        });
+    } else {
+        play(word);
     }
+} else if (mode == 2) {
+    fs.readFile(WORDS_FILE, 'utf8', (err, data) => {
+        if (err)
+            throw err;
 
-    console.log(`The word is ${guess}`);
-});
+        let ai = new_ai(data.split('\n'));
+        let guess;
 
-function select_next_guess(words) {
-    // Search for the first word without repeated letters
-    for (word of words) {
-        let repeat = false;
-        let letters = [];
-        for (letter of word) {
-            for (l of letters) {
-                if (l == letter) {
-                    repeat = true;
+        while (ai.words.length > 1) {
+            guess = ai.select_next_guess();
+            console.log(`I guess ${guess}`);
+
+            // Get result
+            let result = prompt("Enter the result: ").toLowerCase();
+
+            ai.filter_from_result(guess, result);
+        }
+
+        console.log(`The word is ${guess}`);
+    });
+} else {
+    let runs = parseInt(prompt("How many runs would you like to do? "));
+    let display_stumped = prompt("Would you like display stumped words? ");
+
+    display_stumped = display_stumped == "yes" || display_stumped == "y";
+
+    fs.readFile(WORDS_FILE, 'utf8', (err, data) => {
+        if (err)
+            throw err;
+
+        let words = data.split('\n');
+
+        let wins = 0;
+        let winning_guesses = 0;
+        let stumped_words = [];
+
+        for (let i = 0; i < runs; i++) {
+            let ai = new_ai(words);
+            let game = new_game(words[Math.floor(Math.random() * words.length)]);
+
+            while (true) {
+                let guess = ai.select_next_guess();
+
+                let result = game.guess(guess);
+
+                if (result == "out of moves") {
+                    if (display_stumped)
+                        stumped_words.push(game.word);
+                    break;
+                } else if (result == "correct") {
+                    wins++;
+                    winning_guesses += game.guesses;
                     break;
                 }
-            }
 
-            if (repeat) {
-                break;
-            } else {
-                letters.push(letter);
+                ai.filter_from_result(guess, result);
             }
         }
 
-        if (!repeat)
-            return word;
-    }
+        let losses = runs - wins;
+        let win_rate = (wins * 100.0) / runs;
 
-    return words[0]; // If all words have repeated letters, just return the first
-}
+        let average_winning_guesses = (winning_guesses * 1.0) / wins;
 
-function filter_from_result(words, guess, result) {
-    let con = {};
-    let notcon = [];
+        console.log("RESULTS");
+        console.log(`   ${wins} wins, ${losses} losses (${win_rate.toFixed(2)}% wins)`);
+        console.log(`   It took an average of ${average_winning_guesses.toFixed(2)} guesses to win`);
 
-    for (let i = 0; i < 5; i++) {
-        let letter = guess[i];
 
-        if (result[i] == 'b') {
-            notcon.push(letter);
-            words = filter(words, "notat", letter, i);
-        } else if (result[i] == 'y') {
-            if (letter in con)
-                con[letter]++;
-            else
-                con[letter] = 1;
-
-            words = filter(words, "notat", letter, i);
-        } else if (result[i] == 'g') {
-            if (letter in con)
-                con[letter]++;
-            else
-                con[letter] = 1;
-
-            words = filter(words, "at", letter, i);
+        if (stumped_words.length > 0 && display_stumped) {
+            console.log(`   The following words stumped the ai:`);
+            for (word of stumped_words) {
+                console.log(`     - ${word}`);
+            }
         }
-    }
-
-    for (letter of notcon)
-        if (!(letter in con))
-            words = filter(words, "notcon", letter, undefined);
-
-    for (letter in con)
-        words = filter(words, "multicon", letter, con[letter]);
-
-    return words;
+    });
 }
 
-function filter(words, filter_type, letter, third_param) {
-    let invert = false;
-    if (filter_type == "con" || filter_type == "notcon") {
-        if (filter_type == "notcon")
-            invert = true;
-        filter_type = "multicon";
-        third_param = 1;
-    } else if (filter_type == "notat") {
-        invert = true;
-        filter_type = "at";
+function play(word) {
+    let game = new_game(word);
+
+    while (true) {
+        let guess = prompt("Enter your guess: ");
+
+        let result = game.guess(guess);
+
+        if (result == "correct") {
+            console.log(`You guessed the correct word in ${game.guesses} guesses`);
+            return;
+        } else if (result == "out of moves")
+            break;
+
+        console.log(`                  ${result}`);
     }
 
-    // Create new words list
-    let new_words = [];
-    for (word of words) {
-        let keep = true;
-        if (filter_type == "multicon") {
-            let count = 0;
-            for (wletter of word)
-                if (wletter == letter)
-                    count++;
-
-            keep = count >= third_param;
-        } else if (filter_type == "at")
-            keep = word[third_param] == letter;
-
-        if (invert)
-            keep = !keep;
-
-        if (keep)
-            new_words.push(word);
-    }
-
-    return new_words;
+    console.log("You have run out of guesses");
+    console.log(`The word was ${game.word}`);
 }

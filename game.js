@@ -1,43 +1,26 @@
-const fs = require('fs');
-const prompt = require('prompt-sync')({ sigint: true });
-
-const WORDS_FILE = './words.txt';
-
-let word = prompt("Enter the word (leave blank for random): ");
-
 String.prototype.replaceAt = function (index, replacement) {
     return this.substring(0, index) + replacement + this.substring(index + replacement.length);
 }
 
-if (word == "") {
-    fs.readFile(WORDS_FILE, 'utf8', (err, data) => {
-        if (err)
-            throw err;
+module.exports = (word) => {
+    let game = {};
 
-        let words = data.split('\n');
+    game.word = word;
+    game.guesses = 0;
+    game.guess = function (guess) {
+        if (guess == this.word)
+            return "correct";
 
-        let word = words[Math.floor(Math.random() * words.length)];
+        this.guesses++;
+        if (this.guesses >= 6)
+            return "out of moves";
 
-        play(word);
-    });
-} else {
-    play(word)
-}
-
-function play(word) {
-    for (let i = 0; i < 6; i++) {
-        let guess = prompt("Enter your guess: ");
         let result = "bbbbb";
-        let temp_word = word;
-
-        if (guess == word) {
-            console.log("You guessed the correct word!");
-            return;
-        }
+        let temp_word = this.word;
 
         // Note any correct letters and replace them
         for (let j = 0; j < 5; j++) {
-            if (guess[j] == word[j]) {
+            if (guess[j] == temp_word[j]) {
                 result = result.replaceAt(j, 'g');
                 guess = guess.replaceAt(j, ' ');
                 temp_word = temp_word.replaceAt(j, ' ');
@@ -55,9 +38,8 @@ function play(word) {
             }
         }
 
-        console.log(`                  ${result}`);
+        return result;
     }
 
-    console.log("You have run out of guesses");
-    console.log(`The word was ${word}`);
+    return game;
 }

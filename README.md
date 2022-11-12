@@ -1,4 +1,4 @@
-# Worlde Helper
+# Wordle Helper
 A helper program for the wordle puzzle game.
 
 ## Running
